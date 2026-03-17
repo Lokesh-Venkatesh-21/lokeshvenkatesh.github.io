@@ -1,1 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4 RAG Types That Matter — Lokesh Venkatesh</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810; --surface: #0f0f1a; --surface2: #141424;
+    --border: #1f1f35; --border-bright: #2a2a45;
+    --c1: #00e5ff; --c2: #a78bfa; --c3: #34d399; --c4: #fbbf24;
+    --text: #e2e8f0; --text-dim: #94a3b8; --muted: #4a5568;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--bg); font-family:'DM Mono',monospace; color:var(--text);
+    min-height:100vh; padding:52px 52px 60px; position:relative;
+    max-width:1200px; margin:0 auto;
+  }
+  body::before {
+    content:''; position:absolute; inset:0;
+    background-image:radial-gradient(circle,rgba(167,139,250,0.10) 1px,transparent 1px);
+    background-size:28px 28px; pointer-events:none; z-index:0;
+  }
+  .orb { position:absolute; border-radius:50%; filter:blur(110px); pointer-events:none; z-index:0; }
+  .orb1 { width:500px; height:500px; background:#5b21b6; opacity:0.15; top:-160px; left:-160px; }
+  .orb2 { width:360px; height:360px; background:#00e5ff; opacity:0.08; bottom:80px; right:-80px; }
+  .orb3 { width:280px; height:280px; background:#059669; opacity:0.08; bottom:-60px; left:40%; }
 
+  header,.grid,.comparison,.resources,footer { position:relative; z-index:1; }
+
+  /* ── HEADER ── */
+  header { margin-bottom:40px; position:relative; }
+  .brand-mark { position:absolute; top:0; right:0; display:flex; align-items:center; gap:10px; z-index:2; }
+  .brand-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text-dim); letter-spacing:0.2px; opacity:0.85; }
+  .brand-avatar {
+    width:34px; height:34px; border-radius:50%;
+    background:linear-gradient(135deg,var(--c1),var(--c2));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Syne',sans-serif; font-size:12px; font-weight:800;
+    color:var(--bg); flex-shrink:0; letter-spacing:-0.5px;
+    box-shadow:0 0 14px rgba(0,229,255,0.25);
+  }
+  .eyebrow {
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:10px; letter-spacing:3px; text-transform:uppercase;
+    color:var(--c1); border:1px solid rgba(0,229,255,0.25);
+    background:rgba(0,229,255,0.04); padding:5px 14px;
+    border-radius:3px; margin-bottom:18px;
+    opacity:0; animation:fadeUp 0.6s 0.05s forwards;
+  }
+  .eyebrow::before {
+    content:''; width:6px; height:6px; border-radius:50%;
+    background:var(--c1); box-shadow:0 0 6px var(--c1);
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+  h1 {
+    font-family:'Syne',sans-serif; font-size:40px; font-weight:800;
+    line-height:1.15; letter-spacing:-1.5px; color:var(--text);
+    opacity:0; transform:translateY(16px); animation:fadeUp 0.7s 0.15s forwards;
+  }
+  h1 em {
+    font-style:normal;
+    background:linear-gradient(100deg,var(--c1) 0%,var(--c2) 55%,var(--c3) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .subtitle {
+    margin-top:10px; color:var(--text-dim); font-size:13px;
+    letter-spacing:0.3px; max-width:680px;
+    opacity:0; transform:translateY(12px); animation:fadeUp 0.7s 0.28s forwards;
+  }
+  .subtitle .hint { color:var(--muted); }
+  @keyframes fadeUp { to{opacity:1;transform:translateY(0)} }
+
+  /* ── GRID ── */
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
+
+  /* ── CARD ── */
+  .card {
+    background:var(--surface); border-radius:14px; padding:26px 24px 36px;
+    position:relative; border:1px solid var(--border); cursor:pointer;
+    opacity:0; transform:translateY(28px);
+    transition:transform 0.28s ease,box-shadow 0.28s ease,border-color 0.28s ease,opacity 0.28s ease;
+    will-change:transform,opacity;
+  }
+  .card.visible { opacity:1; transform:translateY(0); }
+  .card.visible:hover { transform:translateY(-5px); }
+  .card.visible.c1:hover { box-shadow:0 10px 36px rgba(0,229,255,0.13),inset 3px 0 20px rgba(0,229,255,0.06); border-color:rgba(0,229,255,0.35); }
+  .card.visible.c2:hover { box-shadow:0 10px 36px rgba(167,139,250,0.13),inset 3px 0 20px rgba(167,139,250,0.06); border-color:rgba(167,139,250,0.35); }
+  .card.visible.c3:hover { box-shadow:0 10px 36px rgba(52,211,153,0.13),inset 3px 0 20px rgba(52,211,153,0.06); border-color:rgba(52,211,153,0.35); }
+  .card.visible.c4:hover { box-shadow:0 10px 36px rgba(251,191,36,0.13),inset 3px 0 20px rgba(251,191,36,0.06); border-color:rgba(251,191,36,0.35); }
+  .card.active.c1 { border-color:rgba(0,229,255,0.5); box-shadow:0 0 0 1px rgba(0,229,255,0.2); }
+  .card.active.c2 { border-color:rgba(167,139,250,0.5); box-shadow:0 0 0 1px rgba(167,139,250,0.2); }
+  .card.active.c3 { border-color:rgba(52,211,153,0.5); box-shadow:0 0 0 1px rgba(52,211,153,0.2); }
+  .card.active.c4 { border-color:rgba(251,191,36,0.5); box-shadow:0 0 0 1px rgba(251,191,36,0.2); }
+  .c1 { box-shadow:inset 3px 0 20px rgba(0,229,255,0.04),0 0 0 1px var(--border); }
+  .c2 { box-shadow:inset 3px 0 20px rgba(167,139,250,0.05),0 0 0 1px var(--border); }
+  .c3 { box-shadow:inset 3px 0 20px rgba(52,211,153,0.04),0 0 0 1px var(--border); }
+  .c4 { box-shadow:inset 3px 0 20px rgba(251,191,36,0.04),0 0 0 1px var(--border); }
+  .card::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:14px 14px 0 0; }
+  .c1::after { background:linear-gradient(90deg,var(--c1),rgba(0,229,255,0)); }
+  .c2::after { background:linear-gradient(90deg,var(--c2),rgba(167,139,250,0)); }
+  .c3::after { background:linear-gradient(90deg,var(--c3),rgba(52,211,153,0)); }
+  .c4::after { background:linear-gradient(90deg,var(--c4),rgba(251,191,36,0)); }
+
+  .click-hint {
+    position:absolute; bottom:13px; right:16px;
+    font-size:9px; letter-spacing:1.2px; text-transform:uppercase;
+    display:flex; align-items:center; gap:5px; transition:opacity 0.2s;
+  }
+  .c1 .click-hint { color:rgba(0,229,255,0.45); }
+  .c2 .click-hint { color:rgba(167,139,250,0.45); }
+  .c3 .click-hint { color:rgba(52,211,153,0.45); }
+  .c4 .click-hint { color:rgba(251,191,36,0.45); }
+
+  /* ── RUN PIPELINE BUTTON ── */
+  .run-btn {
+    position:absolute; bottom:13px; left:24px;
+    display:flex; align-items:center; gap:5px;
+    font-size:9px; letter-spacing:1.2px; text-transform:uppercase;
+    padding:5px 10px; border-radius:4px; cursor:pointer;
+    font-family:'Syne',sans-serif; font-weight:600;
+    border:1px solid; transition:all 0.2s; z-index:2;
+  }
+  .c1 .run-btn { color:var(--c1); border-color:rgba(0,229,255,0.3); background:rgba(0,229,255,0.06); }
+  .c2 .run-btn { color:var(--c2); border-color:rgba(167,139,250,0.3); background:rgba(167,139,250,0.06); }
+  .c3 .run-btn { color:var(--c3); border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.06); }
+  .c4 .run-btn { color:var(--c4); border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.06); }
+  .c1 .run-btn:hover { background:rgba(0,229,255,0.14); }
+  .c2 .run-btn:hover { background:rgba(167,139,250,0.14); }
+  .c3 .run-btn:hover { background:rgba(52,211,153,0.14); }
+  .c4 .run-btn:hover { background:rgba(251,191,36,0.14); }
+  .run-btn .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .run-btn.running .dot { animation:blink 0.6s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── NODE PULSE (flow trace) ── */
+  .node.active-step { animation:nodePulse 0.5s ease; }
+  @keyframes nodePulse {
+    0%   { transform:scale(1); }
+    40%  { transform:scale(1.06); }
+    100% { transform:scale(1); }
+  }
+
+  /* ── CARD HEADER ── */
+  .card-header { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .card-num { font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted); }
+  .card-title { font-family:'Syne',sans-serif; font-size:17px; font-weight:700; }
+  .c1 .card-title { color:var(--c1); } .c2 .card-title { color:var(--c2); }
+  .c3 .card-title { color:var(--c3); } .c4 .card-title { color:var(--c4); }
+  .badge { margin-left:auto; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; padding:4px 10px; border-radius:3px; font-weight:600; font-family:'Syne',sans-serif; }
+  .c1 .badge { background:rgba(0,229,255,0.10); color:var(--c1); border:1px solid rgba(0,229,255,0.28); }
+  .c2 .badge { background:rgba(167,139,250,0.10); color:var(--c2); border:1px solid rgba(167,139,250,0.28); }
+  .c3 .badge { background:rgba(52,211,153,0.10); color:var(--c3); border:1px solid rgba(52,211,153,0.28); }
+  .c4 .badge { background:rgba(251,191,36,0.10); color:var(--c4); border:1px solid rgba(251,191,36,0.28); }
+
+  /* ── FLOW ── */
+  .flow { display:flex; flex-direction:column; gap:0; margin-bottom:18px; position:relative; }
+  .flow-row { display:flex; align-items:center; gap:6px; }
+  .flow > * { opacity:0; transform:translateY(6px); transition:opacity 0.25s ease,transform 0.25s ease; }
+  .card.animated .flow > *:nth-child(1)  { opacity:1; transform:none; transition-delay:0.05s; }
+  .card.animated .flow > *:nth-child(2)  { opacity:1; transform:none; transition-delay:0.11s; }
+  .card.animated .flow > *:nth-child(3)  { opacity:1; transform:none; transition-delay:0.17s; }
+  .card.animated .flow > *:nth-child(4)  { opacity:1; transform:none; transition-delay:0.23s; }
+  .card.animated .flow > *:nth-child(5)  { opacity:1; transform:none; transition-delay:0.29s; }
+  .card.animated .flow > *:nth-child(6)  { opacity:1; transform:none; transition-delay:0.35s; }
+  .card.animated .flow > *:nth-child(7)  { opacity:1; transform:none; transition-delay:0.41s; }
+  .card.animated .flow > *:nth-child(8)  { opacity:1; transform:none; transition-delay:0.47s; }
+  .card.animated .flow > *:nth-child(9)  { opacity:1; transform:none; transition-delay:0.53s; }
+  .card.animated .flow > *:nth-child(10) { opacity:1; transform:none; transition-delay:0.59s; }
+  .card.animated .flow > *:nth-child(11) { opacity:1; transform:none; transition-delay:0.65s; }
+  .card.animated .flow > *:nth-child(12) { opacity:1; transform:none; transition-delay:0.71s; }
+
+  .split-grid > * { opacity:0; transform:translateY(6px); transition:opacity 0.25s ease,transform 0.25s ease; }
+  .card.animated .split-grid > *:nth-child(1)  { opacity:1; transform:none; transition-delay:0.30s; }
+  .card.animated .split-grid > *:nth-child(2)  { opacity:1; transform:none; transition-delay:0.30s; }
+  .card.animated .split-grid > *:nth-child(3)  { opacity:1; transform:none; transition-delay:0.36s; }
+  .card.animated .split-grid > *:nth-child(4)  { opacity:1; transform:none; transition-delay:0.36s; }
+  .card.animated .split-grid > *:nth-child(5)  { opacity:1; transform:none; transition-delay:0.42s; }
+  .card.animated .split-grid > *:nth-child(6)  { opacity:1; transform:none; transition-delay:0.42s; }
+  .card.animated .split-grid > *:nth-child(7)  { opacity:1; transform:none; transition-delay:0.48s; }
+  .card.animated .split-grid > *:nth-child(8)  { opacity:1; transform:none; transition-delay:0.48s; }
+  .card.animated .split-grid > *:nth-child(9)  { opacity:1; transform:none; transition-delay:0.54s; }
+  .card.animated .split-grid > *:nth-child(10) { opacity:1; transform:none; transition-delay:0.54s; }
+  .card.animated .split-grid > *:nth-child(11) { opacity:1; transform:none; transition-delay:0.60s; }
+  .card.animated .split-grid > *:nth-child(12) { opacity:1; transform:none; transition-delay:0.60s; }
+  .card.animated .split-grid > *:nth-child(13) { opacity:1; transform:none; transition-delay:0.66s; }
+
+  /* ── NODE ── */
+  .node {
+    background:var(--surface2); border:1px solid var(--border-bright);
+    border-radius:6px; padding:7px 13px; font-size:11px;
+    white-space:nowrap; color:var(--text-dim); letter-spacing:0.2px;
+    transition:background 0.18s,border-color 0.18s,box-shadow 0.18s,color 0.18s;
+    position:relative;
+  }
+  .c1 .node:hover { background:rgba(0,229,255,0.08); border-color:rgba(0,229,255,0.5); color:var(--c1); box-shadow:0 0 12px rgba(0,229,255,0.18); }
+  .c2 .node:hover { background:rgba(167,139,250,0.08); border-color:rgba(167,139,250,0.5); color:var(--c2); box-shadow:0 0 12px rgba(167,139,250,0.18); }
+  .c3 .node:hover { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.5); color:var(--c3); box-shadow:0 0 12px rgba(52,211,153,0.18); }
+  .c4 .node:hover { background:rgba(251,191,36,0.08); border-color:rgba(251,191,36,0.5); color:var(--c4); box-shadow:0 0 12px rgba(251,191,36,0.18); }
+  .c1 .node.hl { color:var(--c1); border-color:rgba(0,229,255,0.45); background:rgba(0,229,255,0.07); }
+  .c2 .node.hl { color:var(--c2); border-color:rgba(167,139,250,0.45); background:rgba(167,139,250,0.07); }
+  .c3 .node.hl { color:var(--c3); border-color:rgba(52,211,153,0.45); background:rgba(52,211,153,0.07); }
+  .c4 .node.hl { color:var(--c4); border-color:rgba(251,191,36,0.45); background:rgba(251,191,36,0.07); }
+    40%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── TOOLTIP ── */
+  .node[data-tip] { cursor:default; }
+  .tooltip {
+    position:fixed;
+    background:var(--surface);
+    border:1px solid var(--border-bright);
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:11px;
+    color:var(--text-dim);
+    line-height:1.55;
+    max-width:240px;
+    white-space:normal;
+    pointer-events:none;
+    z-index:200;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    opacity:0;
+    transform:translateY(4px);
+    transition:opacity 0.15s ease, transform 0.15s ease;
+  }
+  .tooltip.visible { opacity:1; transform:translateY(0); }
+  .tooltip strong { color:var(--text); font-weight:500; display:block; margin-bottom:3px; }
+  .tooltip::before {
+    content:'';
+    position:absolute; top:-5px; left:16px;
+    width:8px; height:8px;
+    background:var(--surface);
+    border-left:1px solid var(--border-bright);
+    border-top:1px solid var(--border-bright);
+    transform:rotate(45deg);
+  }
+
+
+  .arr { color:var(--muted); font-size:12px; flex-shrink:0; }
+  .arr-down { color:var(--muted); font-size:12px; padding:4px 0 4px 14px; line-height:1; }
+
+  /* ── HYBRID SPLIT ── */
+  .split-grid { display:grid; grid-template-columns:1fr 1fr; column-gap:8px; width:100%; }
+  .split-grid .sarr-row { display:flex; align-items:center; justify-content:center; padding:4px 0; color:var(--muted); font-size:12px; }
+  .split-grid .snode { width:100%; }
+  .split-merge { grid-column:1/-1; display:flex; align-items:center; padding:5px 0; gap:0; }
+  .split-merge .mline { flex:1; height:1px; background:var(--border-bright); }
+  .split-merge .mlabel { padding:0 10px; font-size:10px; white-space:nowrap; color:var(--muted); }
+  .split-indicator { display:flex; flex-direction:column; align-items:center; padding:2px 0 0; }
+  .split-line { width:1px; height:8px; background:var(--border-bright); }
+  .split-arrows-row { display:flex; width:100%; justify-content:space-between; padding:0 20%; color:var(--muted); font-size:16px; line-height:1; padding-bottom:2px; }
+  .node-tag { font-size:9px; color:var(--muted); letter-spacing:0.5px; padding:2px 0 2px 4px; white-space:nowrap; font-style:italic; }
+  .card-desc { font-size:11.5px; color:var(--text-dim); line-height:1.65; border-top:1px solid var(--border); padding-top:14px; }
+  .card-desc strong { color:var(--text); font-weight:500; }
+
+  /* ── COMPARISON TABLE ── */
+  .comparison { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:18px; opacity:0; transform:translateY(16px); animation:fadeUp 0.6s 0.95s forwards; }
+  .tbl-header { padding:14px 22px; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.01); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .tbl-header span { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
+  .tbl-disclaimer { font-size:10px; color:var(--muted); font-family:'DM Mono',monospace; letter-spacing:0; font-weight:400; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { padding:11px 20px; text-align:left; color:var(--muted); font-size:9.5px; letter-spacing:1.5px; text-transform:uppercase; font-weight:400; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.01); }
+  td { padding:12px 20px; border-bottom:1px solid rgba(255,255,255,0.03); color:var(--text-dim); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tbody tr { cursor:pointer; transition:background 0.15s; }
+  tbody tr:nth-child(1):hover td { background:rgba(0,229,255,0.04); }
+  tbody tr:nth-child(2):hover td { background:rgba(167,139,250,0.04); }
+  tbody tr:nth-child(3):hover td { background:rgba(52,211,153,0.04); }
+  tbody tr:nth-child(4):hover td { background:rgba(251,191,36,0.04); }
+  td:first-child { font-family:'Syne',sans-serif; font-weight:700; font-size:13px; }
+  .t1{color:var(--c1)!important} .t2{color:var(--c2)!important} .t3{color:var(--c3)!important} .t4{color:var(--c4)!important}
+  .pill { display:inline-block; padding:3px 10px; border-radius:3px; font-size:10px; letter-spacing:0.5px; font-weight:500; }
+  .pill-low  { background:rgba(100,116,139,0.18); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+  .pill-med  { background:rgba(251,191,36,0.12); color:var(--c4); border:1px solid rgba(251,191,36,0.3); }
+  .pill-high { background:rgba(52,211,153,0.12); color:var(--c3); border:1px solid rgba(52,211,153,0.3); }
+  .pill-max  { background:rgba(167,139,250,0.12); color:var(--c2); border:1px solid rgba(167,139,250,0.3); }
+
+  /* ── RESOURCES SECTION ── */
+  .resources {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; overflow:hidden; margin-bottom:18px;
+    opacity:0; transform:translateY(16px);
+    animation:fadeUp 0.6s 1.05s forwards;
+  }
+  .resources-header { padding:14px 22px; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.01); }
+  .resources-header span { font-family:'Syne',sans-serif; font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text-dim); }
+  .resource-list { display:grid; grid-template-columns:1fr 1fr 1fr; }
+  .resource-item {
+    padding:18px 22px; border-right:1px solid var(--border);
+    transition:background 0.18s;
+    text-decoration:none; display:block;
+  }
+  .resource-item:last-child { border-right:none; }
+  .resource-item:hover { background:rgba(255,255,255,0.02); }
+  .resource-num { font-size:9px; letter-spacing:2px; font-family:'Syne',sans-serif; font-weight:700; color:var(--muted); margin-bottom:6px; }
+  .resource-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; }
+  .resource-by { font-size:10px; color:var(--muted); margin-bottom:8px; }
+  .resource-desc { font-size:11px; color:var(--text-dim); line-height:1.55; }
+  .resource-tag {
+    display:inline-block; margin-top:10px;
+    font-size:9px; letter-spacing:1px; text-transform:uppercase;
+    padding:3px 8px; border-radius:2px; font-family:'Syne',sans-serif; font-weight:600;
+  }
+  .tag-paper { background:rgba(0,229,255,0.08); color:var(--c1); border:1px solid rgba(0,229,255,0.2); }
+  .tag-course { background:rgba(167,139,250,0.08); color:var(--c2); border:1px solid rgba(167,139,250,0.2); }
+  .tag-repo  { background:rgba(52,211,153,0.08); color:var(--c3); border:1px solid rgba(52,211,153,0.2); }
+
+  /* ── FOOTER ── */
+  footer { display:flex; align-items:center; justify-content:space-between; padding-top:4px; opacity:0; animation:fadeUp 0.6s 1.15s forwards; }
+  .footer-note { font-size:11px; color:var(--text-dim); letter-spacing:0.3px; }
+  .hashtags { font-size:11px; color:var(--c2); opacity:0.75; letter-spacing:0.5px; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display:none; position:fixed; inset:0; z-index:100; background:rgba(8,8,16,0.82); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:24px; }
+  .modal-overlay.open { display:flex; animation:overlayIn 0.2s ease; }
+  @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+  .modal { background:var(--surface); border-radius:18px; border:1px solid var(--border-bright); width:100%; max-width:640px; max-height:88vh; position:relative; display:flex; flex-direction:column; animation:modalIn 0.28s cubic-bezier(0.34,1.3,0.64,1); }
+  @keyframes modalIn { from{opacity:0;transform:scale(0.93) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:18px 18px 0 0; z-index:1; }
+  .modal.m1::before{background:linear-gradient(90deg,var(--c1),transparent)}
+  .modal.m2::before{background:linear-gradient(90deg,var(--c2),transparent)}
+  .modal.m3::before{background:linear-gradient(90deg,var(--c3),transparent)}
+  .modal.m4::before{background:linear-gradient(90deg,var(--c4),transparent)}
+  .modal-head { padding:28px 28px 0; flex-shrink:0; }
+  .modal-body { padding:20px 28px 24px; overflow-y:auto; flex:1; scrollbar-width:thin; scrollbar-color:var(--border-bright) transparent; }
+  .modal-body::-webkit-scrollbar{width:4px} .modal-body::-webkit-scrollbar-track{background:transparent} .modal-body::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
+  .modal-nav { padding:14px 28px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; background:var(--surface); border-radius:0 0 18px 18px; }
+  .modal-close { position:absolute; top:14px; right:16px; background:var(--surface2); border:1px solid var(--border-bright); color:var(--text-dim); font-size:14px; width:28px; height:28px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.18s; z-index:2; line-height:1; }
+  .modal-close:hover,.modal-close:focus { background:var(--border-bright); color:var(--text); outline:2px solid var(--c1); outline-offset:2px; }
+  .modal-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; margin-bottom:6px; letter-spacing:-0.5px; padding-right:36px; }
+  .m1 .modal-title{color:var(--c1)} .m2 .modal-title{color:var(--c2)} .m3 .modal-title{color:var(--c3)} .m4 .modal-title{color:var(--c4)}
+  .modal-subtitle { color:var(--text-dim); font-size:12px; margin-bottom:0; line-height:1.65; }
+  .modal-section { margin-bottom:22px; }
+  .modal-section:first-child { margin-top:4px; }
+  .modal-section h3 { font-family:'Syne',sans-serif; font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  .detail-steps { display:flex; flex-direction:column; gap:7px; }
+  .detail-step { display:flex; align-items:flex-start; gap:12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px 14px; transition:border-color 0.18s,background 0.18s; opacity:0; transform:translateY(8px); animation:stepIn 0.3s ease forwards; }
+  .detail-step:nth-child(1){animation-delay:0.05s} .detail-step:nth-child(2){animation-delay:0.10s} .detail-step:nth-child(3){animation-delay:0.15s} .detail-step:nth-child(4){animation-delay:0.20s} .detail-step:nth-child(5){animation-delay:0.25s} .detail-step:nth-child(6){animation-delay:0.30s} .detail-step:nth-child(7){animation-delay:0.35s}
+  @keyframes stepIn { to{opacity:1;transform:translateY(0)} }
+  .detail-step:hover { border-color:var(--border-bright); background:rgba(255,255,255,0.02); }
+  .step-num { font-family:'Syne',sans-serif; font-size:10px; font-weight:700; min-width:22px; padding-top:2px; flex-shrink:0; }
+  .m1 .step-num{color:var(--c1)} .m2 .step-num{color:var(--c2)} .m3 .step-num{color:var(--c3)} .m4 .step-num{color:var(--c4)}
+  .step-text { font-size:12px; color:var(--text-dim); line-height:1.55; }
+  .step-text strong { color:var(--text); font-weight:500; }
+  .pros-cons { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .pros,.cons { background:var(--surface2); border-radius:8px; padding:12px 14px; border:1px solid var(--border); }
+  .pros h4 { font-size:9.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--c3); margin-bottom:8px; font-family:'Syne',sans-serif; }
+  .cons h4 { font-size:9.5px; letter-spacing:1.5px; text-transform:uppercase; color:#f87171; margin-bottom:8px; font-family:'Syne',sans-serif; }
+  .pros li,.cons li { font-size:11px; color:var(--text-dim); margin-left:14px; margin-bottom:5px; line-height:1.45; }
+  .use-cases { display:flex; flex-wrap:wrap; gap:7px; }
+  .use-case { font-size:10px; padding:4px 12px; border-radius:3px; background:var(--surface2); border:1px solid var(--border-bright); color:var(--text-dim); letter-spacing:0.3px; }
+  .nav-btn { display:flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border-bright); color:var(--text-dim); font-size:10px; letter-spacing:1px; text-transform:uppercase; font-family:'Syne',sans-serif; padding:7px 14px; border-radius:6px; cursor:pointer; transition:all 0.18s; }
+  .nav-btn:hover { border-color:var(--text-dim); color:var(--text); }
+  .nav-btn:focus { outline:2px solid var(--c1); outline-offset:2px; }
+  .nav-btn:disabled { opacity:0.25; cursor:default; pointer-events:none; }
+  .nav-dots { display:flex; gap:6px; align-items:center; }
+  .nav-dot { width:6px; height:6px; border-radius:50%; background:var(--border-bright); cursor:pointer; transition:background 0.2s,transform 0.2s; border:none; }
+  .nav-dot.active { transform:scale(1.4); }
+  .nav-dot[data-idx="0"].active{background:var(--c1)} .nav-dot[data-idx="1"].active{background:var(--c2)} .nav-dot[data-idx="2"].active{background:var(--c3)} .nav-dot[data-idx="3"].active{background:var(--c4)}
+
+  /* ── RESPONSIVE ── */
+  @media (max-width:860px) {
+    body { padding:32px 24px 48px; }
+    h1 { font-size:28px; }
+    .brand-name { display:none; }
+    .grid { grid-template-columns:1fr; }
+    .comparison { overflow-x:auto; }
+    table { min-width:680px; }
+    .pros-cons { grid-template-columns:1fr; }
+    footer { flex-direction:column; gap:10px; align-items:flex-start; }
+    .resource-list { grid-template-columns:1fr; }
+    .resource-item { border-right:none; border-bottom:1px solid var(--border); }
+    .resource-item:last-child { border-bottom:none; }
+  }
+  @media (max-width:540px) {
+    body { padding:24px 16px 40px; }
+    h1 { font-size:22px; letter-spacing:-1px; }
+    .modal { max-height:94vh; }
+    .modal-head { padding:22px 20px 0; }
+    .modal-body { padding:16px 20px 16px; }
+    .modal-nav { padding:12px 20px; }
+    .nav-btn span { display:none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="tooltip" id="tooltip"><strong id="tooltip-title"></strong><span id="tooltip-body"></span></div>
+
+  <header>
+    <div class="brand-mark">
+      <div class="brand-name">Lokesh Venkatesh</div>
+      <div class="brand-avatar">LV</div>
+    </div>
+    <div class="eyebrow">RAG Architecture Guide</div>
+    <h1>4 Types of RAG That <em>Actually Matter</em><br>in Production</h1>
+    <p class="subtitle">RAG (Retrieval-Augmented Generation) grounds LLM (Large Language Model) responses in your own data. Each type trades off complexity, latency, and retrieval accuracy differently. <span class="hint">— Hover nodes for details. Click cards to expand. Hit ▶ to trace the flow.</span></p>
+  </header>
+
+  <div class="grid">
+
+    <!-- 01 NAIVE -->
+    <div class="card c1" data-key="naive" onclick="openModal('naive',this)">
+      <div class="card-header">
+        <span class="card-num">01</span>
+        <span class="card-title">Naive RAG</span>
+        <span class="badge">Vector Search</span>
+      </div>
+      <div class="flow" id="flow-naive">
+        <div class="flow-row"><div class="node hl" data-tip="user-query">User Query</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="chunking">Chunking</div><span class="node-tag">fixed / semantic / recursive</span></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="embedding">Embedding Model</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="vector-store">Vector Store</div><span class="arr">→</span><div class="node" data-tip="topk">Top-K via Cosine Similarity</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="llm-response">LLM → Response</div></div>
+      </div>
+      <button class="run-btn" onclick="runTrace(event,'naive')"><span class="dot"></span> Run</button>
+      <p class="card-desc"><strong>Retrieve → Generate.</strong> Fast to build, brittle in production. Falls apart when queries are ambiguous or data is complex.</p>
+      <span class="click-hint">Expand</span>
+    </div>
+
+    <!-- 02 HYBRID -->
+    <div class="card c2" data-key="hybrid" onclick="openModal('hybrid',this)">
+      <div class="card-header">
+        <span class="card-num">02</span>
+        <span class="card-title">Hybrid RAG</span>
+        <span class="badge">Vector + Keyword</span>
+      </div>
+      <div class="flow" id="flow-hybrid">
+        <div class="flow-row"><div class="node hl" data-tip="user-query">User Query</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="chunking">Chunking</div><span class="node-tag">fixed / semantic / recursive</span></div>
+        <div class="split-indicator">
+          <div class="split-line"></div>
+          <div class="split-arrows-row"><span>↙</span><span>↘</span></div>
+        </div>
+        <div class="split-grid">
+          <div class="node snode" data-tip="embedding">Embedding Model</div>
+          <div class="node snode" data-tip="bm25-search">BM25 Keyword Search</div>
+          <div class="sarr-row">↓</div><div class="sarr-row">↓</div>
+          <div class="node snode" data-tip="vector-store">Vector Store</div>
+          <div class="node snode" data-tip="inverted-index">Inverted Index</div>
+          <div class="sarr-row">↓</div><div class="sarr-row">↓</div>
+          <div class="node snode" data-tip="cosine">Cosine Similarity</div>
+          <div class="node snode" data-tip="bm25-score">BM25 Score</div>
+          <div class="sarr-row">↓</div><div class="sarr-row">↓</div>
+          <div class="split-merge"><div class="mline"></div><div class="mlabel">↓ merge ↓</div><div class="mline"></div></div>
+        </div>
+        <div class="flow-row"><div class="node hl" data-tip="rrf-reranker">RRF / Reranker</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="llm-response">LLM → Response</div></div>
+      </div>
+      <button class="run-btn" onclick="runTrace(event,'hybrid')"><span class="dot"></span> Run</button>
+      <p class="card-desc"><strong>Semantic + Keyword search combined.</strong> Because sometimes exact words matter more than meaning. RRF or a reranker resolves conflicts.</p>
+      <span class="click-hint">Expand</span>
+    </div>
+
+    <!-- 03 GRAPH -->
+    <div class="card c3" data-key="graph" onclick="openModal('graph',this)">
+      <div class="card-header">
+        <span class="card-num">03</span>
+        <span class="card-title">Graph RAG</span>
+        <span class="badge">Graph Traversal</span>
+      </div>
+      <div class="flow" id="flow-graph">
+        <div class="flow-row"><div class="node" style="font-size:10px;opacity:0.7;font-style:italic;" data-tip="kg-offline">⚙ Pre-built Knowledge Graph</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="user-query">User Query</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="embedding">Embedding Model</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="vector-store">Vector Store</div><span class="arr">→</span><div class="node" data-tip="seed-nodes">Seed Nodes</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="kg-traversal">Knowledge Graph Traversal</div></div>
+        <div class="arr-down">↓ &nbsp;entities + relationships</div>
+        <div class="flow-row"><div class="node" data-tip="context-assembly">Context Assembly</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="llm-response">LLM → Response</div></div>
+      </div>
+      <button class="run-btn" onclick="runTrace(event,'graph')"><span class="dot"></span> Run</button>
+      <p class="card-desc"><strong>Retrieves connected, relational context.</strong> Critical when your data has relationships that flat vectors can't capture. Underrated and underused.</p>
+      <span class="click-hint">Expand</span>
+    </div>
+
+    <!-- 04 AGENTIC -->
+    <div class="card c4" data-key="agentic" onclick="openModal('agentic',this)">
+      <div class="card-header">
+        <span class="card-num">04</span>
+        <span class="card-title">Agentic RAG</span>
+        <span class="badge">Agent-Driven</span>
+      </div>
+      <div class="flow" id="flow-agentic">
+        <div class="flow-row"><div class="node hl" data-tip="user-query">User Query</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="llm-agent">LLM Agent</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="retrieve-decision">Should I retrieve?</div><span class="arr">→ No</span><div class="node" data-tip="direct-response">Direct Response</div></div>
+        <div class="arr-down">↓ Yes</div>
+        <div class="flow-row"><div class="node" data-tip="query-rewriter">Query Rewriter</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node hl" data-tip="retrieval-tool">Retrieval Tool</div><span class="arr">→</span><div class="node" data-tip="retrieval-strategy">Vector / Hybrid / Graph</div></div>
+        <div class="arr-down">↓</div>
+        <div class="flow-row"><div class="node" data-tip="context-check">Sufficient context?</div><span class="arr">→ No →</span><div class="node" data-tip="loop">↑ Loop</div></div>
+        <div class="arr-down">↓ Yes</div>
+        <div class="flow-row"><div class="node hl" data-tip="llm-response">LLM → Response</div></div>
+      </div>
+      <button class="run-btn" onclick="runTrace(event,'agentic')"><span class="dot"></span> Run</button>
+      <p class="card-desc"><strong>The model decides when and what to retrieve.</strong> Less pipeline, more reasoning. Where RAG is heading.</p>
+      <span class="click-hint">Expand</span>
+    </div>
+
+  </div>
+
+  <!-- COMPARISON TABLE -->
+  <div class="comparison">
+    <div class="tbl-header">
+      <span>At a Glance</span>
+      <span class="tbl-disclaimer">latency figures are indicative — varies by model &amp; infra</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Type</th><th>Retrieval Method</th><th>Intelligence Layer</th><th>Complexity</th><th>Latency</th><th>Best For</th></tr>
+      </thead>
+      <tbody>
+        <tr onclick="openModal('naive')" title="Click for full details">
+          <td class="t1">Naive RAG</td><td>Vector only</td><td>None</td>
+          <td><span class="pill pill-low">Low</span></td><td><span class="pill pill-low">~100ms</span></td>
+          <td>Prototypes &amp; MVPs (Minimum Viable Products)</td>
+        </tr>
+        <tr onclick="openModal('hybrid')" title="Click for full details">
+          <td class="t2">Hybrid RAG</td><td>Vector + Keyword</td><td>RRF / Reranker</td>
+          <td><span class="pill pill-med">Medium</span></td><td><span class="pill pill-med">~300ms</span></td>
+          <td>Production systems</td>
+        </tr>
+        <tr onclick="openModal('graph')" title="Click for full details">
+          <td class="t3">Graph RAG</td><td>Graph traversal</td><td>Relationship-aware</td>
+          <td><span class="pill pill-high">High</span></td><td><span class="pill pill-high">~500ms+</span></td>
+          <td>Relational / complex data</td>
+        </tr>
+        <tr onclick="openModal('agentic')" title="Click for full details">
+          <td class="t4">Agentic RAG</td><td>Dynamic</td><td>Agent-directed</td>
+          <td><span class="pill pill-max">Highest</span></td><td><span class="pill pill-max">1–10s+</span></td>
+          <td>Complex reasoning tasks</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LEARNING RESOURCES -->
+  <div class="resources">
+    <div class="resources-header"><span>Free Resources</span></div>
+    <div class="resource-list">
+      <a class="resource-item" href="https://arxiv.org/abs/2312.10997" target="_blank" rel="noopener">
+        <div class="resource-num">01</div>
+        <div class="resource-title">RAG Survey: Retrieval-Augmented Generation for Large Language Models</div>
+        <div class="resource-by">Gao et al. — arXiv 2023</div>
+        <div class="resource-desc">The most comprehensive academic survey of RAG. Covers Naive, Advanced, and Modular RAG with evaluation benchmarks. The go-to reference paper for understanding the full landscape.</div>
+        <span class="resource-tag tag-paper">Research Paper</span>
+      </a>
+      <a class="resource-item" href="https://www.deeplearning.ai/short-courses/building-evaluating-advanced-rag/" target="_blank" rel="noopener">
+        <div class="resource-num">02</div>
+        <div class="resource-title">Building and Evaluating Advanced RAG</div>
+        <div class="resource-by">DeepLearning.AI — Short Course</div>
+        <div class="resource-desc">Hands-on course covering RAG evaluation, sentence-window retrieval, and auto-merging retrieval. Taught by LlamaIndex engineers. Free to audit, practical Python code throughout.</div>
+        <span class="resource-tag tag-course">Free Course</span>
+      </a>
+      <a class="resource-item" href="https://github.com/microsoft/graphrag" target="_blank" rel="noopener">
+        <div class="resource-num">03</div>
+        <div class="resource-title">Microsoft GraphRAG</div>
+        <div class="resource-by">Microsoft Research — GitHub</div>
+        <div class="resource-desc">The reference implementation for Graph RAG. Includes automated knowledge graph construction using LLMs, community summarisation, and both local and global search modes. Well documented with examples.</div>
+        <span class="resource-tag tag-repo">Open Source</span>
+      </a>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-note">The right RAG type depends on your data, latency tolerance, and use case.</div>
+    <div class="hashtags">#RAG &nbsp;#LLM &nbsp;#GenAI &nbsp;#AIEngineering</div>
+  </footer>
+
+  <!-- MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeOnOverlay(event)">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">✕</button>
+      <div class="modal-head">
+        <div class="modal-title" id="modalTitle"></div>
+        <p class="modal-subtitle" id="modalSubtitle"></p>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-nav">
+        <button class="nav-btn" id="prevBtn" onclick="navigate(-1)">← <span>Prev</span></button>
+        <div class="nav-dots" id="navDots"></div>
+        <button class="nav-btn" id="nextBtn" onclick="navigate(1)"><span>Next</span> →</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ── TOOLTIP DATA ──
+const tips = {
+  'user-query':       { title: 'User Query',               body: 'Raw natural language question entered by the user.' },
+  'chunking':         { title: 'Chunking',                  body: 'Documents split into smaller pieces. Strategy (fixed / semantic / recursive) affects retrieval quality.' },
+  'embedding':        { title: 'Embedding Model',           body: 'Converts text into dense vectors. e.g. OpenAI text-embedding-3-small, sentence-transformers.' },
+  'vector-store':     { title: 'Vector Store',              body: 'Database of chunk embeddings. Runs ANN search at query time. e.g. FAISS, Pinecone, pgvector.' },
+  'topk':             { title: 'Top-K via Cosine Similarity', body: 'Selects K most similar chunks by cosine distance. K is typically 3–10.' },
+  'llm-response':     { title: 'LLM → Response',           body: 'Query + retrieved chunks passed to the model. It generates a grounded answer.' },
+  'bm25-search':      { title: 'BM25 Keyword Search',       body: 'Sparse retrieval scoring by term frequency (TF) and inverse document frequency (IDF). Excels at exact term matches.' },
+  'inverted-index':   { title: 'Inverted Index',            body: 'Maps terms to the documents containing them. The backbone of keyword search (used in Elasticsearch, Solr).' },
+  'cosine':           { title: 'Cosine Similarity',         body: 'Measures angle between query and chunk vectors. Score between 0–1; higher = more similar.' },
+  'bm25-score':       { title: 'BM25 Score',                body: 'Probabilistic relevance score based on term frequency and document length normalisation.' },
+  'rrf-reranker':     { title: 'RRF / Reranker',            body: 'RRF (Reciprocal Rank Fusion) merges ranked lists mathematically. A cross-encoder reranker re-reads each pair for higher precision.' },
+  'kg-offline':       { title: 'Pre-built Knowledge Graph', body: 'Built offline: extract entities + relationships from documents, resolve duplicates, store in a graph DB (Neo4j, Neptune).' },
+  'seed-nodes':       { title: 'Seed Nodes',                body: 'Entry points into the graph — entities most semantically similar to the query.' },
+  'kg-traversal':     { title: 'Knowledge Graph Traversal', body: 'Expands from seed nodes along typed edges to discover connected context that flat vectors miss.' },
+  'context-assembly': { title: 'Context Assembly',          body: 'Converts traversed graph nodes and edges into text triples or a subgraph summary for the LLM.' },
+  'llm-agent':        { title: 'LLM Agent (Planner)',       body: 'The agent decides strategy: decompose query, choose tools, or skip retrieval if unnecessary.' },
+  'retrieve-decision':{ title: 'Retrieval Decision',        body: 'Agent evaluates if retrieval is needed. Simple factual queries may be answered directly, saving latency.' },
+  'direct-response':  { title: 'Direct Response',           body: 'Agent responds from its own knowledge — no retrieval step, lowest latency path.' },
+  'query-rewriter':   { title: 'Query Rewriter',            body: 'Rewrites the query into a retrieval-optimised form: disambiguates pronouns, expands acronyms, decomposes compound questions.' },
+  'retrieval-tool':   { title: 'Retrieval Tool',            body: 'The agent calls a retrieval function — which type (Naive/Hybrid/Graph) is chosen dynamically per sub-question.' },
+  'retrieval-strategy':{ title: 'Retrieval Strategy',       body: 'Agent selects from available retrieval methods. Different sub-questions may use different strategies in one session.' },
+  'context-check':    { title: 'Context Sufficiency Check', body: 'Agent evaluates whether retrieved context is enough to answer confidently. If not, it reformulates and retrieves again.' },
+  'loop':             { title: 'Retrieval Loop',            body: 'Agent retries with a refined query up to a configurable max iterations before forcing a response.' },
+};
+
+// ── TOOLTIP LOGIC ──
+const tooltip = document.getElementById('tooltip');
+const tipTitle = document.getElementById('tooltip-title');
+const tipBody  = document.getElementById('tooltip-body');
+let tooltipTimeout;
+
+document.addEventListener('mouseover', e => {
+  const node = e.target.closest('[data-tip]');
+  if (!node) return;
+  const key = node.dataset.tip;
+  const t = tips[key];
+  if (!t) return;
+  clearTimeout(tooltipTimeout);
+  tipTitle.textContent = t.title;
+  tipBody.textContent  = t.body;
+
+  // Get accent color from parent card
+  const card = node.closest('.card');
+  const accentMap = { c1: '#00e5ff', c2: '#a78bfa', c3: '#34d399', c4: '#fbbf24' };
+  let accent = '#94a3b8';
+  if (card) {
+    for (const [cls, col] of Object.entries(accentMap)) {
+      if (card.classList.contains(cls)) { accent = col; break; }
+    }
+  }
+  tooltip.style.borderTopColor = accent;
+
+  const rect = node.getBoundingClientRect();
+  tooltip.style.left = Math.min(rect.left, window.innerWidth - 260) + 'px';
+  tooltip.style.top  = (rect.bottom + 10) + 'px';
+  tooltip.classList.add('visible');
+});
+
+document.addEventListener('mouseout', e => {
+  const node = e.target.closest('[data-tip]');
+  if (!node) return;
+  tooltipTimeout = setTimeout(() => tooltip.classList.remove('visible'), 80);
+});
+
+
+// ── FLOW TRACE ANIMATION ──
+const traceSequences = {
+  naive:   ['.flow-row:nth-child(1) .node', '.flow-row:nth-child(3) .node:first-child', '.flow-row:nth-child(5) .node', '.flow-row:nth-child(7) .node:first-child', '.flow-row:nth-child(7) .node:last-child', '.flow-row:nth-child(9) .node'],
+  hybrid:  ['.flow-row:nth-child(1) .node', '.flow-row:nth-child(3) .node:first-child', '.split-grid .node:nth-child(1)', '.split-grid .node:nth-child(2)', '.split-grid .node:nth-child(3)', '.split-grid .node:nth-child(4)', '.split-grid .node:nth-child(5)', '.split-grid .node:nth-child(6)', '.flow-row:nth-child(6) .node', '.flow-row:nth-child(8) .node'],
+  graph:   ['.flow-row:nth-child(1) .node', '.flow-row:nth-child(3) .node', '.flow-row:nth-child(5) .node', '.flow-row:nth-child(7) .node:first-child', '.flow-row:nth-child(7) .node:last-child', '.flow-row:nth-child(9) .node', '.flow-row:nth-child(11) .node', '.flow-row:nth-child(13) .node'],
+  agentic: ['.flow-row:nth-child(1) .node', '.flow-row:nth-child(3) .node', '.flow-row:nth-child(5) .node:first-child', '.flow-row:nth-child(7) .node', '.flow-row:nth-child(9) .node:first-child', '.flow-row:nth-child(9) .node:last-child', '.flow-row:nth-child(11) .node:first-child', '.flow-row:nth-child(13) .node'],
+};
+
+const activeTraces = {};
+
+function runTrace(e, key) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const flow = document.getElementById('flow-' + key);
+  if (!flow) return;
+
+  // Toggle: clicking again cancels the trace
+  if (activeTraces[key]) {
+    clearTimeout(activeTraces[key]);
+    delete activeTraces[key];
+    flow.querySelectorAll('.node').forEach(n => n.classList.remove('active-step'));
+    btn.classList.remove('running');
+    return;
+  }
+
+  btn.classList.add('running');
+  const seqs = traceSequences[key];
+
+  const card = btn.closest('.card');
+  const accentMap = { c1: '#00e5ff', c2: '#a78bfa', c3: '#34d399', c4: '#fbbf24' };
+  let accent = '#94a3b8';
+  for (const [cls, col] of Object.entries(accentMap)) {
+    if (card && card.classList.contains(cls)) { accent = col; break; }
+  }
+
+  let i = 0;
+  function step() {
+    flow.querySelectorAll('.node').forEach(n => n.classList.remove('active-step'));
+    if (i >= seqs.length) {
+      btn.classList.remove('running');
+      delete activeTraces[key];
+      return;
+    }
+    const target = flow.querySelector(seqs[i]);
+    if (target) {
+      target.classList.add('active-step');
+      target.style.boxShadow = `0 0 18px ${accent}55, 0 0 6px ${accent}88`;
+      setTimeout(() => { target.style.boxShadow = ''; }, 480);
+    }
+    i++;
+    activeTraces[key] = setTimeout(step, 520);
+  }
+  step();
+}
+
+// ── MODAL DATA ──
+const KEYS = ['naive', 'hybrid', 'graph', 'agentic'];
+let currentIdx = 0;
+
+const data = {
+  naive: {
+    cls: 'm1', title: 'Naive RAG', badge: 'Vector Search',
+    subtitle: 'The simplest RAG architecture. Query goes in, retrieved chunks come out, LLM generates a response. No filtering, no reranking, no feedback loop.',
+    steps: [
+      { label: 'User Query', detail: 'Raw natural language question or prompt from the user.' },
+      { label: 'Chunking', detail: '<strong>Split documents into fixed, semantic, or recursive chunks.</strong> Chunk size and overlap are critical — too large loses precision, too small loses context.' },
+      { label: 'Embedding Model', detail: 'Transform each chunk and the query into dense vector representations (e.g. OpenAI text-embedding-3-small, text-embedding-3-large, or open-source sentence-transformers).' },
+      { label: 'Vector Store', detail: 'Store all chunk embeddings. At query time, embed the user query and run approximate nearest-neighbour (ANN) search (FAISS, Pinecone, Weaviate, pgvector).' },
+      { label: 'Top-K Retrieval via Cosine Similarity', detail: '<strong>Rank all chunks by cosine similarity to the query vector and select the top K.</strong> K is a tunable hyperparameter — typically 3–10. Watch out: if K is too high, retrieved chunks may exceed the LLM context window, silently degrading response quality.' },
+      { label: 'LLM → Response', detail: 'Pass the query + top-K chunks as context to the LLM. The model generates a response grounded in the retrieved content. No filtering, reranking, or feedback loop applied.' },
+    ],
+    pros: ['Fast to prototype', 'Simple to debug', 'Low infrastructure cost', 'Good baseline for comparison'],
+    cons: ['No keyword precision', 'No reranking or filtering', 'Brittle on ambiguous queries', 'Fails on complex multi-hop questions', 'High K values can silently exceed LLM context window'],
+    useCases: ['Internal FAQs', 'Simple document Q&A', 'Proof of concepts / MVPs (Minimum Viable Products)', 'Low-stakes chatbots'],
+  },
+  hybrid: {
+    cls: 'm2', title: 'Hybrid RAG', badge: 'Vector + Keyword',
+    subtitle: 'Combines dense vector search with sparse keyword search (BM25). Each path scores independently, then RRF or a cross-encoder reranker merges and re-orders the results before passing to the LLM.',
+    steps: [
+      { label: 'User Query', detail: 'Input query is sent in parallel to both retrieval branches simultaneously.' },
+      { label: 'Chunking', detail: '<strong>Chunk the corpus once</strong>, then index it in both a vector store and an inverted index. Chunking strategy affects both branches.' },
+      { label: 'Embedding Model → Vector Store', detail: 'Dense path: embed chunks and query, run ANN search, score by cosine similarity.' },
+      { label: 'BM25 Keyword Search → Inverted Index', detail: '<strong>Sparse path: BM25 scores based on term frequency (TF) and inverse document frequency (IDF).</strong> Excels when exact terminology matters (product names, error codes, jargon).' },
+      { label: 'Cosine Similarity + BM25 Score', detail: 'Each path produces its own ranked list with its own score. These are independent signals that must be reconciled.' },
+      { label: 'Merge: RRF or Cross-Encoder Reranker', detail: "<strong>Two distinct approaches — don't conflate them.</strong> (1) Reciprocal Rank Fusion (RRF) merges ranked lists mathematically without reading documents — fast and often sufficient. (2) A cross-encoder reranker re-reads each query-document pair and re-scores from scratch — more accurate but adds latency. Many production systems use RRF alone." },
+      { label: 'LLM → Response', detail: 'Top reranked chunks passed to the LLM with the original query.' },
+    ],
+    pros: ['Best precision + recall balance in production', 'Handles exact + semantic queries', 'Reranker fixes scoring conflicts', 'Industry standard for enterprise RAG'],
+    cons: ['More infrastructure (dual index)', 'Both indexes must stay in sync on updates', 'Cross-encoder reranker adds latency', 'BM25 needs tuning per domain'],
+    useCases: ['Enterprise search', 'Legal / medical Q&A', 'Customer support', 'Code search & documentation'],
+  },
+  graph: {
+    cls: 'm3', title: 'Graph RAG', badge: 'Graph Traversal',
+    subtitle: 'Uses a knowledge graph to retrieve not just similar chunks, but connected entities and relationships. Ideal when the answer requires traversing multi-hop relationships across documents.',
+    steps: [
+      { label: '⚙ Offline Pre-Step: Graph Construction', detail: '<strong>Before any query can be answered, the knowledge graph must be built.</strong> This is an expensive offline process: (1) extract entities and relationships from raw documents using NLP/LLMs, (2) resolve co-references and deduplicate entities, (3) store as a graph database (Neo4j, Neptune, etc.). Microsoft GraphRAG popularised automated graph construction using LLMs.' },
+      { label: 'User Query', detail: 'The query is analysed to identify key entities using named entity recognition (NER). Most implementations focus on entity extraction rather than full dependency parsing.' },
+      { label: 'Embedding Model', detail: 'Query and entities are embedded to find the most relevant entry points (seed nodes) in the knowledge graph.' },
+      { label: 'Vector Store → Seed Nodes', detail: '<strong>Initial retrieval identifies seed nodes</strong> — the entities in the graph most semantically close to the query.' },
+      { label: 'Knowledge Graph Traversal', detail: '<strong>Graph traversal expands outward from seed nodes</strong>, following typed edges (e.g. "works_at", "related_to", "causes") to discover connected context that vector search would miss.' },
+      { label: 'Context Assembly', detail: 'Traversed nodes and edges are serialised into structured context — either as text triples or a subgraph summary — and passed to the LLM.' },
+      { label: 'LLM → Response', detail: 'LLM reasons over both the structured graph context and raw text to generate a relationship-aware response.' },
+    ],
+    pros: ['Captures multi-hop relationships', 'Handles complex analytical queries', 'Structured, traceable retrieval path', 'Reduces hallucination on relationship queries (entity extraction errors can still propagate upstream)'],
+    cons: ['Graph construction is expensive', 'Entity extraction quality is critical', 'High engineering complexity', 'Harder to update incrementally'],
+    useCases: ['Knowledge bases & wikis', 'Drug interaction discovery', 'Financial relationship mapping', 'Research literature analysis', 'Microsoft GraphRAG (reference implementation)'],
+  },
+  agentic: {
+    cls: 'm4', title: 'Agentic RAG', badge: 'Agent-Driven',
+    subtitle: 'The LLM acts as an autonomous agent that decides whether to retrieve, what to retrieve, and when enough context has been gathered. It can loop, self-critique, and use multiple retrieval strategies.',
+    steps: [
+      { label: 'User Query', detail: 'Complex, multi-part, or open-ended question that may require multiple retrieval steps to fully answer.' },
+      { label: 'LLM Agent (Planner)', detail: '<strong>The agent decides the retrieval strategy.</strong> It may decompose the query into sub-questions, choose retrieval tools, or determine that no retrieval is needed at all.' },
+      { label: 'Should I retrieve?', detail: "For simple factual questions within the model's training data, the agent may skip retrieval entirely and respond directly — saving latency and cost." },
+      { label: 'Query Rewriter', detail: '<strong>The agent rewrites the original query</strong> into a more retrieval-optimised form — disambiguating pronouns, expanding acronyms, decomposing compound questions.' },
+      { label: 'Retrieval Tool', detail: 'The agent dynamically selects from Naive, Hybrid, or Graph retrieval depending on the sub-question. Each sub-question may use a different retrieval strategy.' },
+      { label: 'Sufficient context? (Loop)', detail: '<strong>The agent evaluates whether the retrieved context is sufficient to answer confidently.</strong> If not, it reformulates the query and retrieves again — up to a configurable max iterations.' },
+      { label: 'LLM → Response (+ Optional Self-Critique)', detail: 'The model generates a final response. Some implementations add a self-critique loop (as in Self-RAG and Reflexion) where the model scores its own answer and retries if confidence is low — but this is not universal.' },
+    ],
+    pros: ['Handles complex multi-hop queries', 'Adaptive retrieval strategy', 'Self-correcting loop', 'Most capable for open-ended tasks'],
+    cons: ['High latency (multiple LLM calls)', 'Expensive at scale', 'Hard to test and debug', 'Requires strong base model'],
+    useCases: ['Research assistants', 'Complex data analysis', 'Multi-document summarisation', 'Autonomous AI workflows', 'Frameworks: LangGraph, LlamaIndex Agents, AutoGen'],
+  },
+};
+
+function renderModal(key) {
+  const d = data[key];
+  currentIdx = KEYS.indexOf(key);
+  const modal = document.getElementById('modal');
+  modal.className = 'modal ' + d.cls;
+  document.getElementById('modalTitle').textContent = d.title;
+  document.getElementById('modalSubtitle').textContent = d.subtitle;
+  const stepsHtml = d.steps.map((s,i) => `
+    <div class="detail-step">
+      <span class="step-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="step-text"><strong>${s.label}</strong><br>${s.detail}</div>
+    </div>`).join('');
+  const prosHtml  = d.pros.map(p => `<li>${p}</li>`).join('');
+  const consHtml  = d.cons.map(c => `<li>${c}</li>`).join('');
+  const casesHtml = d.useCases.map(u => `<span class="use-case">${u}</span>`).join('');
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section"><h3>Pipeline Steps</h3><div class="detail-steps">${stepsHtml}</div></div>
+    <div class="modal-section"><h3>Strengths &amp; Limitations</h3>
+      <div class="pros-cons">
+        <div class="pros"><h4>Strengths</h4><ul>${prosHtml}</ul></div>
+        <div class="cons"><h4>Limitations</h4><ul>${consHtml}</ul></div>
+      </div>
+    </div>
+    <div class="modal-section"><h3>When to Use</h3><div class="use-cases">${casesHtml}</div></div>`;
+  document.getElementById('modalBody').scrollTop = 0;
+  document.querySelectorAll('.nav-dot').forEach((dot,i) => dot.classList.toggle('active', i === currentIdx));
+  document.getElementById('prevBtn').disabled = currentIdx === 0;
+  document.getElementById('nextBtn').disabled = currentIdx === KEYS.length - 1;
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  const activeCard = document.querySelector(`.card[data-key="${key}"]`);
+  if (activeCard) activeCard.classList.add('active');
+}
+
+function openModal(key, cardEl) {
+  renderModal(key);
+  document.getElementById('modalOverlay').classList.add('open');
+  const scrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = '100%';
+  document.body.dataset.scrollY = scrollY;
+  document.getElementById('modal').focus();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  const scrollY = parseInt(document.body.dataset.scrollY || '0');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  window.scrollTo(0, scrollY);
+}
+
+function navigate(dir) {
+  const newIdx = currentIdx + dir;
+  if (newIdx >= 0 && newIdx < KEYS.length) renderModal(KEYS[newIdx]);
+}
+
+function closeOnOverlay(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('modalOverlay').classList.contains('open')) return;
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft')  navigate(-1);
+});
+
+// Nav dots
+const dotsContainer = document.getElementById('navDots');
+KEYS.forEach((k,i) => {
+  const btn = document.createElement('button');
+  btn.className = 'nav-dot'; btn.dataset.idx = i;
+  btn.setAttribute('aria-label', data[k].title);
+  btn.onclick = () => renderModal(k);
+  dotsContainer.appendChild(btn);
+});
+
+// Card entrance + flow animations
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.card').forEach((card, i) => {
+    setTimeout(() => {
+      card.classList.add('visible');
+      setTimeout(() => card.classList.add('animated'), 350);
+    }, 200 + i * 160);
+  });
+});
+</script>
+</body>
+</html>
