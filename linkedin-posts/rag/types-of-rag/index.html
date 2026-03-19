@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The RAG Stack: From Naive to Agentic — Lokesh Venkatesh</title>
+<link rel="stylesheet" href="shared.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -15,9 +16,8 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   html { scroll-behavior:smooth; }
   body {
-    background:var(--bg); font-family:'DM Mono',monospace; color:var(--text);
-    min-height:100vh; padding:52px 52px 60px; position:relative;
-    max-width:1200px; margin:0 auto;
+    padding:52px 52px 60px; position:relative;
+    max-width:calc(260px + 860px); margin:0 auto 0 260px;
   }
   body::before {
     content:''; position:absolute; inset:0;
@@ -303,7 +303,7 @@
   .tag-repo  { background:rgba(90,140,46,0.10); color:var(--c3); border:1px solid rgba(90,140,46,0.30); }
 
   /* ── FOOTER ── */
-  footer { display:flex; align-items:center; justify-content:space-between; padding-top:4px; opacity:0; animation:fadeUp 0.6s 1.15s forwards; }
+  footer { display:flex; align-items:center; justify-content:space-between; padding-top:20px; border-top:1px solid var(--border); margin-top:0; opacity:0; animation:fadeUp 0.6s 1.15s forwards; }
   .footer-note { font-size:11px; color:var(--text-dim); letter-spacing:0.3px; }
   .hashtags { font-size:11px; color:var(--c2); opacity:0.75; letter-spacing:0.5px; }
 
@@ -355,9 +355,45 @@
   .nav-dot.active { transform:scale(1.4); }
   .nav-dot[data-idx="0"].active{background:var(--c1)} .nav-dot[data-idx="1"].active{background:var(--c2)} .nav-dot[data-idx="2"].active{background:var(--c3)} .nav-dot[data-idx="3"].active{background:var(--c4)}
 
+  /* ── NAV BACK ── */
+  .nav-back {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; letter-spacing:1px; color:var(--muted);
+    text-decoration:none; margin-bottom:20px;
+    opacity:0; animation:fadeUp 0.5s 0.02s forwards;
+    transition:color 0.15s;
+  }
+  .nav-back:hover { color:var(--c1); }
+
+  /* ── PREV / NEXT ── */
+  .page-nav {
+    display:flex; align-items:stretch; justify-content:space-between;
+    padding:40px 0 80px; border-top:1px solid var(--border);
+    margin-top:8px; gap:16px; position:relative; z-index:1;
+  }
+  .page-nav-btn {
+    display:flex; flex-direction:column; gap:4px;
+    padding:16px 20px; border-radius:10px; text-decoration:none;
+    background:var(--surface); border:1px solid var(--border);
+    transition:all 0.2s; flex:1; max-width:260px;
+  }
+  .page-nav-btn:hover { border-color:var(--c1); background:rgba(200,146,42,0.04); }
+  .page-nav-btn.next { text-align:right; }
+  .pnb-dir {
+    font-size:9px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted); font-family:'Syne',sans-serif; font-weight:700;
+  }
+  .pnb-title {
+    font-family:'Syne',sans-serif; font-size:13px;
+    font-weight:700; color:var(--text-dim);
+  }
+
   /* ── RESPONSIVE ── */
   @media (max-width:860px) {
-    body { padding:32px 24px 48px; }
+    body {
+    padding:52px 52px 60px; position:relative;
+    max-width:calc(260px + 860px); margin:0 auto 0 260px;
+  }
     h1 { font-size:28px; }
     .brand-name { display:none; }
     .grid { grid-template-columns:1fr; }
@@ -370,7 +406,10 @@
     .resource-item:last-child { border-bottom:none; }
   }
   @media (max-width:540px) {
-    body { padding:24px 16px 40px; }
+    body {
+    padding:52px 52px 60px; position:relative;
+    max-width:calc(260px + 860px); margin:0 auto 0 260px;
+  }
     h1 { font-size:22px; letter-spacing:-1px; }
     .modal { max-height:94vh; }
     .modal-head { padding:22px 20px 0; }
@@ -380,7 +419,7 @@
   }
 </style>
 </head>
-<body>
+<body data-page="rag_interactive_v3">
 
   <div class="orb orb1"></div>
   <div class="orb orb2"></div>
@@ -392,13 +431,12 @@
       <div class="brand-name">Lokesh Venkatesh</div>
       <div class="brand-avatar">LV</div>
     </div>
-    <a class="nav-back" href="../index.html">← RAG Index</a>
+    <a class="nav-back" href="index.html">← RAG Index</a>
     <div class="eyebrow">RAG Architecture Guide</div>
     <h1>The RAG Stack: <em>From Naive to Agentic</em></h1>
     <p class="subtitle">RAG (Retrieval-Augmented Generation) grounds LLM (Large Language Model) responses in your own data. Each type trades off complexity, latency, and retrieval accuracy differently. <span class="hint">— Hover nodes for details. Click cards to expand. Hit ▶ to trace the flow.</span></p>
   </header>
 
-  <main>
   <div class="grid">
 
     <!-- 01 NAIVE -->
@@ -918,16 +956,7 @@
     </div>
   </div>
 
-  <div class="page-nav reveal">
-    <a class="page-nav-btn" href="../index.html"><div class="pnb-dir">← Home</div><div class="pnb-title">RAG Index</div></a>
-    <a class="page-nav-btn next" href="../types-of-rag/index.html"><div class="pnb-dir">Next →</div><div class="pnb-title">02 · The RAG Stack</div></a>
-  </div>
-</main>
 
-  <footer>
-    <div class="footer-note">The right RAG type depends on your data, latency tolerance, and use case.</div>
-    <div class="hashtags">#RAG &nbsp;#LLM &nbsp;#GenAI &nbsp;#AIEngineering</div>
-  </footer>
 
   <!-- MODAL -->
   <div class="modal-overlay" id="modalOverlay" onclick="closeOnOverlay(event)">
@@ -1264,5 +1293,21 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+  
+  <!-- PREV/NEXT NAV -->
+  <div class="page-nav">
+    <a class="page-nav-btn" href="rag_intro.html">
+      <div class="pnb-dir">← Previous</div>
+      <div class="pnb-title">01 · What is RAG?</div>
+    </a>
+    <a class="page-nav-btn next" href="rag_chunking.html">
+      <div class="pnb-dir">Next →</div>
+      <div class="pnb-title">03 · Chunking Strategies</div>
+    </a>
+  </div>
+<script src="shared.js"></script>
+  <footer>
+    <div class="hashtags">#RAG &nbsp;#LLM &nbsp;#GenAI &nbsp;#AIEngineering</div>
+  </footer>
 </body>
 </html>
