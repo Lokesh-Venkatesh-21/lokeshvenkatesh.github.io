@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vector Databases — RAG Docs — Lokesh Venkatesh</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fdf8f0; --surface: #fffcf5; --surface2: #faf2e4;
+    --border: #e8d9b8; --border-bright: #ddc99a;
+    --c1: #c8922a; --c2: #9c5c2e; --c3: #5a8c2e; --c4: #b8760e;
+    --text: #1a0e02; --text-dim: #5a3e18; --muted: #9a7848;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:var(--bg); font-family:'DM Mono',monospace; color:var(--text);
+    min-height:100vh; padding:52px 52px 80px; position:relative;
+    max-width:1100px; margin:0 auto;
+  }
+  body::before {
+    content:''; position:absolute; inset:0;
+    background-image:radial-gradient(circle,rgba(180,140,60,0.08) 1px,transparent 1px);
+    background-size:28px 28px; pointer-events:none; z-index:0;
+  }
+  .orb { position:absolute; border-radius:50%; filter:blur(110px); pointer-events:none; z-index:0; }
+  .orb1 { width:500px;height:500px;background:#d4a843;opacity:0.12;top:-160px;left:-160px; }
+  .orb2 { width:360px;height:360px;background:#c9956a;opacity:0.10;bottom:80px;right:-80px; }
+  .orb3 { width:280px;height:280px;background:#8a7a3a;opacity:0.08;bottom:-60px;left:40%; }
+  header, main, footer, section { position:relative; z-index:1; }
+  @keyframes fadeUp { to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+  @keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  @keyframes stepIn { to{opacity:1;transform:translateY(0)} }
+
+  /* BRAND */
+  .brand-mark { position:absolute; top:0; right:0; display:flex; align-items:center; gap:10px; z-index:2; }
+  .brand-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text-dim); letter-spacing:0.2px; opacity:0.85; }
+  .brand-avatar { width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:#fdf8f0;flex-shrink:0;letter-spacing:-0.5px;box-shadow:0 0 14px rgba(200,146,42,0.25); }
+
+  /* EYEBROW */
+  .eyebrow { display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--c1);border:1px solid rgba(200,146,42,0.25);background:rgba(200,146,42,0.04);padding:5px 14px;border-radius:3px;margin-bottom:18px;opacity:0;animation:fadeUp 0.6s 0.05s forwards; }
+  .eyebrow::before { content:'';width:6px;height:6px;border-radius:50%;background:var(--c1);box-shadow:0 0 6px var(--c1);animation:pulse 2s infinite; }
+
+  /* H1 */
+  h1 { font-family:'Syne',sans-serif;font-size:40px;font-weight:800;line-height:1.15;letter-spacing:-1.5px;color:var(--text);opacity:0;transform:translateY(16px);animation:fadeUp 0.7s 0.15s forwards; }
+  h1 em { font-style:normal;background:linear-gradient(100deg,#b8760e 0%,#9c5c2e 50%,#5a8c2e 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+  .page-subtitle { margin-top:10px;color:var(--text-dim);font-size:13px;letter-spacing:0.3px;max-width:680px;opacity:0;transform:translateY(12px);animation:fadeUp 0.7s 0.28s forwards; }
+
+  /* NAV BACK */
+  .nav-back { display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:1px;color:var(--muted);text-decoration:none;margin-bottom:20px;opacity:0;animation:fadeUp 0.5s 0.02s forwards;transition:color 0.15s; }
+  .nav-back:hover { color:var(--c1); }
+
+  /* META PILLS */
+  .meta-row { display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;opacity:0;animation:fadeUp 0.6s 0.4s forwards; }
+  .meta-pill { font-size:10px;letter-spacing:0.5px;padding:4px 12px;border-radius:20px;color:var(--muted);background:var(--surface2);border:1px solid var(--border); }
+
+  /* SECTION HEADING */
+  .section-label { font-family:'Syne',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px; }
+  .section-label::after { content:'';flex:1;height:1px;background:var(--border); }
+
+  /* CONTENT SECTION */
+  .content-section { margin-bottom:52px; }
+  .content-section h2 { font-family:'Syne',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.8px;margin-bottom:14px;color:var(--text);line-height:1.2; }
+  .content-section h2 em { font-style:normal;color:var(--c1); }
+  .content-section h3 { font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin:24px 0 10px; }
+  .content-section p { font-size:13px;color:var(--text-dim);line-height:1.82;margin-bottom:14px; }
+  .content-section p:last-child { margin-bottom:0; }
+  .content-section p strong { color:var(--text);font-weight:500; }
+  .content-section ul { margin:10px 0 14px 20px; }
+  .content-section li { font-size:13px;color:var(--text-dim);line-height:1.75;margin-bottom:6px; }
+  .content-section li strong { color:var(--text);font-weight:500; }
+
+  /* CARD (matches v3 card exactly) */
+  .card {
+    background:var(--surface);border-radius:14px;padding:26px 24px 36px;
+    position:relative;border:1px solid var(--border);
+    opacity:0;transform:translateY(28px);
+    transition:transform 0.28s ease,box-shadow 0.28s ease,border-color 0.28s ease,opacity 0.28s ease;
+    will-change:transform,opacity;
+  }
+  .card.visible { opacity:1;transform:translateY(0); }
+  .card.visible:hover { transform:translateY(-5px); }
+  .card.visible.c1:hover { box-shadow:0 10px 36px rgba(200,146,42,0.13),inset 3px 0 20px rgba(200,146,42,0.06);border-color:rgba(200,146,42,0.35); }
+  .card.visible.c2:hover { box-shadow:0 10px 36px rgba(156,92,46,0.13),inset 3px 0 20px rgba(156,92,46,0.06);border-color:rgba(156,92,46,0.35); }
+  .card.visible.c3:hover { box-shadow:0 10px 36px rgba(90,140,46,0.13),inset 3px 0 20px rgba(90,140,46,0.06);border-color:rgba(90,140,46,0.35); }
+  .card.visible.c4:hover { box-shadow:0 10px 36px rgba(184,118,14,0.13),inset 3px 0 20px rgba(184,118,14,0.06);border-color:rgba(184,118,14,0.35); }
+  .c1 { box-shadow:inset 3px 0 20px rgba(200,146,42,0.04),0 0 0 1px var(--border); }
+  .c2 { box-shadow:inset 3px 0 20px rgba(156,92,46,0.05),0 0 0 1px var(--border); }
+  .c3 { box-shadow:inset 3px 0 20px rgba(90,140,46,0.04),0 0 0 1px var(--border); }
+  .c4 { box-shadow:inset 3px 0 20px rgba(184,118,14,0.04),0 0 0 1px var(--border); }
+  .card::after { content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0; }
+  .c1::after { background:linear-gradient(90deg,var(--c1),rgba(200,146,42,0)); }
+  .c2::after { background:linear-gradient(90deg,var(--c2),rgba(156,92,46,0)); }
+  .c3::after { background:linear-gradient(90deg,var(--c3),rgba(90,140,46,0)); }
+  .c4::after { background:linear-gradient(90deg,var(--c4),rgba(184,118,14,0)); }
+  .card-header { display:flex;align-items:center;gap:10px;margin-bottom:18px; }
+  .card-num { font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted); }
+  .card-title { font-family:'Syne',sans-serif;font-size:17px;font-weight:700; }
+  .c1 .card-title { color:var(--c1); } .c2 .card-title { color:var(--c2); }
+  .c3 .card-title { color:var(--c3); } .c4 .card-title { color:var(--c4); }
+  .badge { margin-left:auto;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border-radius:3px;font-weight:600;font-family:'Syne',sans-serif; }
+  .c1 .badge { background:rgba(200,146,42,0.10);color:var(--c1);border:1px solid rgba(200,146,42,0.28); }
+  .c2 .badge { background:rgba(156,92,46,0.10);color:var(--c2);border:1px solid rgba(156,92,46,0.28); }
+  .c3 .badge { background:rgba(90,140,46,0.10);color:var(--c3);border:1px solid rgba(90,140,46,0.28); }
+  .c4 .badge { background:rgba(184,118,14,0.10);color:var(--c4);border:1px solid rgba(184,118,14,0.28); }
+  .card-desc { font-size:11.5px;color:var(--text-dim);line-height:1.65;border-top:1px solid var(--border);padding-top:14px; }
+  .card-desc strong { color:var(--text);font-weight:500; }
+
+  /* DIAGRAM CARD (matches v3 pattern) */
+  .diagram-card { background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:20px 0;box-shadow:0 2px 12px rgba(180,140,60,0.05); }
+  .diagram-card::before { content:'';display:block;height:3px; }
+  .dc-gold::before  { background:linear-gradient(90deg,var(--c1),transparent); }
+  .dc-brown::before { background:linear-gradient(90deg,var(--c2),transparent); }
+  .dc-green::before { background:linear-gradient(90deg,var(--c3),transparent); }
+  .dc-amber::before { background:linear-gradient(90deg,var(--c4),transparent); }
+  .diagram-head { padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(180,140,60,0.02); }
+  .diagram-title { font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text-dim); }
+  .diagram-sub { font-size:11px;color:var(--muted);margin-top:2px; }
+  .diagram-body { padding:24px;display:flex;justify-content:center;align-items:center; }
+  .diagram-hint { padding:9px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--muted); }
+
+  /* RUN BUTTON (exact v3 style) */
+  .run-btn { display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;padding:5px 10px;border-radius:4px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;border:1px solid;transition:all 0.2s;background:none; }
+  .dc-gold  .run-btn { color:var(--c1);border-color:rgba(200,146,42,0.35); }
+  .dc-brown .run-btn { color:var(--c2);border-color:rgba(156,92,46,0.35); }
+  .dc-green .run-btn { color:var(--c3);border-color:rgba(90,140,46,0.35); }
+  .dc-amber .run-btn { color:var(--c4);border-color:rgba(184,118,14,0.35); }
+  .dc-gold  .run-btn:hover { background:rgba(200,146,42,0.08); }
+  .dc-brown .run-btn:hover { background:rgba(156,92,46,0.08); }
+  .dc-green .run-btn:hover { background:rgba(90,140,46,0.08); }
+  .dc-amber .run-btn:hover { background:rgba(184,118,14,0.08); }
+  .run-btn .dot { width:6px;height:6px;border-radius:50%;background:currentColor; }
+  .run-btn.running .dot { animation:blink 0.6s infinite; }
+
+  /* CALLOUT */
+  .callout { padding:14px 18px;border-radius:8px;margin:20px 0;background:var(--surface2);border-left:3px solid var(--c1);border:1px solid var(--border);border-left:3px solid var(--c1);font-size:12.5px;color:var(--text-dim);line-height:1.7; }
+  .callout.warn { border-left-color:#b83c2e;background:rgba(184,60,46,0.04); }
+  .callout.tip  { border-left-color:var(--c3);background:rgba(90,140,46,0.04); }
+  .callout strong { color:var(--text);font-weight:500; }
+
+  /* KEY POINT */
+  .key-point { background:var(--surface);border:1px solid var(--border-bright);border-radius:10px;padding:18px 22px;margin:20px 0;position:relative;overflow:hidden; }
+  .key-point::before { content:'';position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--c1); }
+  .key-point p { font-size:13px;color:var(--text-dim);line-height:1.75;margin:0; }
+  .key-point p strong { color:var(--text);font-weight:500; }
+
+  /* COMPARISON TABLE */
+  .compare-table { width:100%;border-collapse:collapse;font-size:12px;margin:16px 0;border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+  .compare-table th { padding:10px 16px;text-align:left;color:var(--muted);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:400;border-bottom:1px solid var(--border);background:rgba(180,140,60,0.02); }
+  .compare-table td { padding:11px 16px;border-bottom:1px solid rgba(180,140,60,0.04);color:var(--text-dim); }
+  .compare-table tr:last-child td { border-bottom:none; }
+  .compare-table tr:hover td { background:rgba(180,140,60,0.02); }
+  .compare-table td:first-child { font-family:'Syne',sans-serif;font-weight:700;color:var(--text); }
+
+  /* CODE BLOCK */
+  .code-label { font-size:10px;letter-spacing:1px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;text-transform:uppercase;margin-bottom:6px;margin-top:20px; }
+  .code-block { background:#150a00;color:#e8d4a8;border-radius:8px;padding:18px 20px;font-size:12px;line-height:1.75;overflow-x:auto;margin:8px 0 14px;border:1px solid rgba(200,146,42,0.15); }
+  .code-block .cm { color:#7a6040;font-style:italic; }
+  .code-block .ck { color:#c8922a; }
+  .code-block .cs { color:#5a8c2e; }
+  .code-block .cn { color:#b8760e; }
+
+  /* TOOLTIP */
+  .tooltip { position:fixed;background:var(--surface);border:1px solid var(--border-bright);border-top:2px solid var(--c1);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--text-dim);line-height:1.55;max-width:240px;pointer-events:none;z-index:500;box-shadow:0 8px 32px rgba(60,30,0,0.15);opacity:0;transform:translateY(4px);transition:opacity 0.15s,transform 0.15s;white-space:normal; }
+  .tooltip.visible { opacity:1;transform:translateY(0); }
+  .tooltip strong { color:var(--text);font-weight:500;display:block;margin-bottom:3px; }
+
+  /* PREV/NEXT NAV */
+  .page-nav { display:flex;align-items:stretch;justify-content:space-between;padding-top:36px;border-top:1px solid var(--border);margin-top:60px;gap:14px; }
+  .page-nav-btn { display:flex;flex-direction:column;gap:4px;padding:16px 20px;border-radius:10px;text-decoration:none;background:var(--surface);border:1px solid var(--border);transition:all 0.2s;flex:1;max-width:260px; }
+  .page-nav-btn:hover { border-color:var(--c1);background:rgba(200,146,42,0.04); }
+  .page-nav-btn.next { text-align:right; }
+  .pnb-dir { font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700; }
+  .pnb-title { font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text-dim); }
+
+  /* FOOTER */
+  footer { display:flex;align-items:center;justify-content:space-between;padding-top:20px;border-top:1px solid var(--border);margin-top:52px;opacity:0;animation:fadeUp 0.6s 1s forwards; }
+  .footer-note { font-size:11px;color:var(--text-dim); }
+  .hashtags { font-size:11px;color:var(--c2);opacity:0.75; }
+
+  /* SCROLL REVEAL */
+  .reveal { opacity:0;transform:translateY(18px);transition:opacity 0.5s ease,transform 0.5s ease; }
+  .reveal.visible { opacity:1;transform:none; }
+
+  /* 2-COL GRID */
+  .two-col { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0; }
+
+  /* RESPONSIVE */
+  @media (max-width:860px) {
+    body { padding:32px 24px 60px; }
+    h1 { font-size:28px; }
+    .two-col { grid-template-columns:1fr; }
+  }
+  @media (max-width:540px) {
+    body { padding:24px 16px 48px; }
+    h1 { font-size:22px;letter-spacing:-1px; }
+    .page-nav { flex-direction:column; }
+    .page-nav-btn { max-width:100%; }
+    .page-nav-btn.next { text-align:left; }
+  }
+
+  .code-label{font-size:10px;letter-spacing:1px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:700;text-transform:uppercase;margin-bottom:6px;margin-top:20px;}
+  .code-block{background:#150a00;color:#e8d4a8;border-radius:8px;padding:18px 20px;font-size:12px;line-height:1.75;overflow-x:auto;margin:8px 0 14px;border:1px solid rgba(200,146,42,0.15);}
+  .code-block .cm{color:#7a6040;font-style:italic;}.code-block .ck{color:#c8922a;}.code-block .cs{color:#5a8c2e;}.code-block .cn{color:#b8760e;}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="tooltip" id="tooltip"><strong id="tooltip-title"></strong><span id="tooltip-body"></span></div>
+
+<header>
+  <div class="brand-mark">
+    <div class="brand-name">Lokesh Venkatesh</div>
+    <div class="brand-avatar">LV</div>
+  </div>
+  <a class="nav-back" href="index.html">← RAG Index</a>
+  <div class="eyebrow">05 — Going Deeper</div>
+  <h1>Vector<br><em>Databases</em></h1>
+  <p class="page-subtitle">A vector database isn't just storage — it's an Approximate Nearest Neighbour search engine. The algorithms it uses determine whether retrieval takes 5ms or 5 seconds at scale.</p>
+  <div class="meta-row"><span class="meta-pill">10 min read</span><span class="meta-pill">HNSW vs IVF</span><span class="meta-pill">6-database comparison</span><span class="meta-pill">Code example</span></div>
+</header>
+
+<main>
+
+  <div class="content-section reveal">
+    <h2>Why exact search <em>doesn't scale</em></h2>
+    <p>Finding the most similar vector to a query naively means comparing against every stored vector — O(n) operations per query. At 1 million chunks × 1536 dimensions, that's 1.5 billion floating-point operations per query. At 100 queries/second, the math becomes impossible.</p>
+    <p>Approximate Nearest Neighbour (ANN) algorithms solve this by sacrificing a tiny accuracy margin — finding top-10 results correctly 97% of the time instead of 100% — in exchange for sub-100ms search across tens of millions of vectors. In practice, the small recall loss is invisible: you're not looking for mathematical perfection, you're looking for chunks that give the LLM enough context.</p>
+  </div>
+
+  <div class="content-section reveal">
+    <h2>HNSW vs IVF — <em>the two main algorithms</em></h2>
+    <h3>HNSW (Hierarchical Navigable Small World)</h3>
+    <p>Builds a multi-layer graph where each node connects to its nearest neighbours. At query time, navigation starts at the top (sparse, long-range connections) and descends to the bottom (dense, fine-grained neighbours). Excellent recall (95–99%) at very low latency (5–15ms at millions of vectors). The tradeoff: the entire graph must fit in RAM. Used by Weaviate, Qdrant, and pgvector.</p>
+
+    <div class="diagram-card dc-brown">
+      <div class="diagram-head">
+        <div><div class="diagram-title">HNSW — multi-layer graph navigation</div><div class="diagram-sub">Query enters top sparse layer and navigates down to dense result layer</div></div>
+        <button class="run-btn" onclick="runTrace(event,'hnsw','#9c5c2e')"><span class="dot"></span> Run</button>
+      </div>
+      <div class="diagram-body" id="flow-hnsw">
+        <svg viewBox="0 0 460 185" style="width:100%;max-width:460px;height:185px;display:block">
+          <defs><marker id="mh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M1 2L8 5L1 8" fill="none" stroke="#9c5c2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+          <text x="8" y="34" font-family="DM Mono,monospace" font-size="8" fill="#9a7848">Layer 2 (sparse)</text>
+          <text x="8" y="92" font-family="DM Mono,monospace" font-size="8" fill="#9a7848">Layer 1</text>
+          <text x="8" y="157" font-family="DM Mono,monospace" font-size="8" fill="#9a7848">Layer 0 (dense)</text>
+          <circle cx="180" cy="26" r="9" fill="rgba(156,92,46,0.15)" stroke="rgba(156,92,46,0.50)" stroke-width="1"/>
+          <circle cx="310" cy="26" r="9" fill="rgba(156,92,46,0.15)" stroke="rgba(156,92,46,0.50)" stroke-width="1"/>
+          <circle cx="400" cy="26" r="9" fill="rgba(156,92,46,0.15)" stroke="rgba(156,92,46,0.50)" stroke-width="1"/>
+          <line x1="189" y1="26" x2="301" y2="26" stroke="rgba(156,92,46,0.2)" stroke-width="0.75"/>
+          <line x1="319" y1="26" x2="391" y2="26" stroke="rgba(156,92,46,0.2)" stroke-width="0.75"/>
+          <circle cx="180" cy="26" r="9" fill="rgba(156,92,46,0.45)" stroke="rgba(156,92,46,0.80)" stroke-width="1.5" data-trace="1"/>
+          <text x="180" y="14" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" fill="#9a7848">entry</text>
+          <circle cx="158" cy="83" r="7" fill="rgba(156,92,46,0.12)" stroke="rgba(156,92,46,0.40)" stroke-width="1"/>
+          <circle cx="232" cy="83" r="7" fill="rgba(156,92,46,0.35)" stroke="rgba(156,92,46,0.80)" stroke-width="1.5" data-trace="2"/>
+          <circle cx="302" cy="83" r="7" fill="rgba(156,92,46,0.12)" stroke="rgba(156,92,46,0.40)" stroke-width="1"/>
+          <circle cx="372" cy="83" r="7" fill="rgba(156,92,46,0.12)" stroke="rgba(156,92,46,0.40)" stroke-width="1"/>
+          <line x1="180" y1="35" x2="163" y2="76" stroke="rgba(156,92,46,0.25)" stroke-width="0.75"/>
+          <line x1="180" y1="35" x2="229" y2="76" stroke="rgba(156,92,46,0.5)" stroke-width="1.5" stroke-dasharray="4 2"/>
+          <line x1="310" y1="35" x2="304" y2="76" stroke="rgba(156,92,46,0.25)" stroke-width="0.75"/>
+          <line x1="310" y1="35" x2="365" y2="76" stroke="rgba(156,92,46,0.25)" stroke-width="0.75"/>
+          <circle cx="118" cy="148" r="6" fill="rgba(156,92,46,0.10)" stroke="rgba(156,92,46,0.30)" stroke-width="0.75"/>
+          <circle cx="158" cy="148" r="6" fill="rgba(156,92,46,0.10)" stroke="rgba(156,92,46,0.30)" stroke-width="0.75"/>
+          <circle cx="200" cy="148" r="6" fill="rgba(156,92,46,0.10)" stroke="rgba(156,92,46,0.30)" stroke-width="0.75"/>
+          <circle cx="242" cy="148" r="8" fill="rgba(156,92,46,0.55)" stroke="#9c5c2e" stroke-width="2" data-trace="3"/>
+          <circle cx="286" cy="148" r="6" fill="rgba(156,92,46,0.10)" stroke="rgba(156,92,46,0.30)" stroke-width="0.75"/>
+          <circle cx="326" cy="148" r="6" fill="rgba(156,92,46,0.10)" stroke="rgba(156,92,46,0.30)" stroke-width="0.75"/>
+          <circle cx="366" cy="148" r="6" fill="rgba(156,92,46,0.10)" stroke="rgba(156,92,46,0.30)" stroke-width="0.75"/>
+          <line x1="124" y1="148" x2="152" y2="148" stroke="rgba(156,92,46,0.15)" stroke-width="0.5"/>
+          <line x1="164" y1="148" x2="194" y2="148" stroke="rgba(156,92,46,0.15)" stroke-width="0.5"/>
+          <line x1="206" y1="148" x2="234" y2="148" stroke="rgba(156,92,46,0.15)" stroke-width="0.5"/>
+          <line x1="250" y1="148" x2="280" y2="148" stroke="rgba(156,92,46,0.15)" stroke-width="0.5"/>
+          <path d="M232 90 L240 140" fill="none" stroke="#9c5c2e" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#mh)"/>
+          <text x="242" y="166" text-anchor="middle" font-family="DM Mono,monospace" font-size="7.5" fill="#9c5c2e" font-weight="500">result</text>
+          <circle cx="88" cy="26" r="8" fill="rgba(200,146,42,0.80)" stroke="#c8922a" stroke-width="1.5"/>
+          <text x="88" y="14" text-anchor="middle" font-family="DM Mono,monospace" font-size="7.5" fill="#9a6010">query</text>
+          <path d="M96 26 L169 26" fill="none" stroke="#c8922a" stroke-width="1.5" stroke-opacity="0.6" marker-end="url(#mh)"/>
+        </svg>
+      </div>
+      <div class="diagram-hint">▶ Run — query enters top layer → greedy navigation down → reaches nearest result</div>
+    </div>
+
+    <h3>IVF (Inverted File Index)</h3>
+    <p>Clusters vectors with k-means. At query time, only the nearest clusters are searched — a fraction of the total index. Far more memory-efficient than HNSW for very large indexes. Slightly lower recall if the correct result is in an unsearched cluster. Combined with Product Quantisation (PQ) as IVF-PQ for billion-scale search. FAISS uses IVF.</p>
+  </div>
+
+  <div class="content-section reveal">
+    <h2>Choosing a database — <em>the practical comparison</em></h2>
+    <table class="compare-table">
+      <thead><tr><th>Database</th><th>Algorithm</th><th>Hybrid search</th><th>Hosting</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td style="color:var(--c1)">FAISS</td><td>IVF, HNSW, PQ</td><td>Manual only</td><td>Library (no server)</td><td>Research, offline batch, custom pipelines</td></tr>
+        <tr><td style="color:var(--c2)">Pinecone</td><td>Proprietary ANN</td><td>Yes (built-in)</td><td>Managed SaaS</td><td>Fastest path to production, no infra</td></tr>
+        <tr><td style="color:var(--c3)">Weaviate</td><td>HNSW</td><td>Yes (BM25 built-in)</td><td>Self-hosted or Cloud</td><td>Hybrid RAG — vector + keyword in one query</td></tr>
+        <tr><td style="color:var(--c4)">Qdrant</td><td>HNSW</td><td>Yes</td><td>Self-hosted or Cloud</td><td>High perf, open source, Rust-based</td></tr>
+        <tr><td style="color:var(--c1)">pgvector</td><td>HNSW + IVF</td><td>Manual</td><td>Postgres extension</td><td>Teams already running Postgres — zero new services</td></tr>
+        <tr><td style="color:var(--c2)">Chroma</td><td>HNSW</td><td>No</td><td>Embedded</td><td>Local development, prototyping, notebooks</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Decision guide:</strong> Already running Postgres? Add <strong>pgvector</strong>. Building Hybrid RAG? <strong>Weaviate</strong>. Want zero ops? <strong>Pinecone</strong>. High performance open source? <strong>Qdrant</strong>.</div>
+  </div>
+
+  <div class="content-section reveal">
+    <h2>Index parameters that <em>actually matter</em></h2>
+    <h3>HNSW: M and ef_construction</h3>
+    <p><strong>M</strong> — bidirectional connections per node. Default 16; try 32–64 for retrieval-critical applications. Higher M = better recall, more memory. <strong>ef_construction</strong> — candidate pool size during graph building. Higher = better graph quality, slower build. Don't reduce this to save build time and wonder later why recall is poor.</p>
+    <h3>ef_search — the runtime recall lever</h3>
+    <p><code>ef_search</code> controls how many candidates are explored at query time. Must be ≥ top_k. Going from ef=64 to ef=128 typically adds 2–4ms but can recover 3–5% of missed relevant chunks — worth it in most RAG systems.</p>
+    <div class="code-label">pgvector — HNSW index with tuned parameters</div>
+    <div class="code-block"><span class="cm">-- Create HNSW index</span>
+CREATE INDEX ON chunks USING hnsw (embedding vector_cosine_ops)
+WITH (m = <span class="cn">32</span>, ef_construction = <span class="cn">128</span>);
+
+<span class="cm">-- Set ef_search at query time for higher recall</span>
+SET hnsw.ef_search = <span class="cn">128</span>;
+
+<span class="cm">-- Retrieve top-5 most similar chunks</span>
+SELECT id, content, embedding <=> $1 AS distance
+FROM chunks ORDER BY embedding <=> $1 LIMIT <span class="cn">5</span>;</div>
+  </div>
+
+  <div class="page-nav reveal">
+    <a class="page-nav-btn" href="rag_embeddings.html"><div class="pnb-dir">← Previous</div><div class="pnb-title">04 · Embedding Models</div></a>
+    <a class="page-nav-btn next" href="rag_evaluation.html"><div class="pnb-dir">Next →</div><div class="pnb-title">06 · RAG Evaluation</div></a>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-note">Lokesh Venkatesh · Data Scientist · AI/ML/NLP/LLM Engineering at Discover</div>
+  <div class="hashtags">#RAG &nbsp;#LLM &nbsp;#GenAI &nbsp;#AIEngineering</div>
+</footer>
+
+<script>
+// ── TOOLTIP ──
+const tooltip  = document.getElementById('tooltip');
+const tipTitle = document.getElementById('tooltip-title');
+const tipBody  = document.getElementById('tooltip-body');
+let ttTimeout;
+document.addEventListener('mouseover', e => {
+  const node = e.target.closest('[data-tip]');
+  if (!node) return;
+  const tips = window.PAGE_TIPS || {};
+  const t = tips[node.dataset.tip];
+  if (!t) return;
+  clearTimeout(ttTimeout);
+  tipTitle.textContent = t.title;
+  tipBody.textContent  = t.body;
+  const r = node.getBoundingClientRect();
+  tooltip.style.left = Math.min(Math.max(r.left,10), window.innerWidth-260)+'px';
+  tooltip.style.top  = (r.bottom+8>window.innerHeight-80 ? r.top-70 : r.bottom+10)+'px';
+  tooltip.classList.add('visible');
+});
+document.addEventListener('mouseout', e => {
+  if (!e.target.closest('[data-tip]')) return;
+  ttTimeout = setTimeout(() => tooltip.classList.remove('visible'), 80);
+});
+
+// ── RUN TRACE ──
+const activeTraces = {};
+function getSVGSteps(flowEl) {
+  const svg = flowEl.querySelector('svg');
+  if (!svg) return [];
+  const marked = [...svg.querySelectorAll('[data-trace]')]
+    .sort((a,b) => parseInt(a.dataset.trace)-parseInt(b.dataset.trace));
+  if (marked.length > 0) return marked;
+  return [...svg.querySelectorAll('rect,polygon,ellipse,circle')].filter(el => {
+    const fill = el.getAttribute('fill') || '';
+    const w = parseFloat(el.getAttribute('width') || el.getAttribute('rx') || el.getAttribute('r') || '0');
+    return fill.includes('rgba') && w > 20 && parseFloat(fill.replace(/.*,([\d.]+)\)$/, '$1')) > 0.07;
+  }).sort((a,b) =>
+    parseFloat(a.getAttribute('y')||a.getAttribute('cy')||'0') -
+    parseFloat(b.getAttribute('y')||b.getAttribute('cy')||'0')
+  );
+}
+function runTrace(e, key, accent) {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  const flow = document.getElementById('flow-' + key);
+  if (!flow) return;
+  if (activeTraces[key]) {
+    clearTimeout(activeTraces[key]); delete activeTraces[key];
+    resetTrace(flow); btn.classList.remove('running'); return;
+  }
+  btn.classList.add('running');
+  const steps = getSVGSteps(flow);
+  const ac = accent || '#9a7848';
+  let i = 0;
+  function step() {
+    resetTrace(flow);
+    if (i >= steps.length) { btn.classList.remove('running'); delete activeTraces[key]; return; }
+    const t = steps[i];
+    t.dataset.origFill   = t.getAttribute('fill')         || '';
+    t.dataset.origStroke = t.getAttribute('stroke')       || '';
+    t.dataset.origSW     = t.getAttribute('stroke-width') || '';
+    t.setAttribute('fill', ac + '33');
+    t.setAttribute('stroke', ac);
+    t.setAttribute('stroke-width', '2');
+    setTimeout(() => {
+      if (t.dataset.origFill !== undefined) {
+        t.setAttribute('fill',         t.dataset.origFill);
+        t.setAttribute('stroke',       t.dataset.origStroke);
+        t.setAttribute('stroke-width', t.dataset.origSW);
+      }
+    }, 350);
+    i++;
+    activeTraces[key] = setTimeout(step, 560);
+  }
+  step();
+}
+function resetTrace(flow) {
+  flow.querySelectorAll('[data-orig-fill]').forEach(el => {
+    el.setAttribute('fill',         el.dataset.origFill);
+    el.setAttribute('stroke',       el.dataset.origStroke || '');
+    el.setAttribute('stroke-width', el.dataset.origSW     || '');
+    delete el.dataset.origFill;
+  });
+}
+
+// ── SCROLL REVEAL ──
+window.addEventListener('DOMContentLoaded', () => {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.01, rootMargin: '0px' });
+  document.querySelectorAll('.reveal, .card').forEach(el => obs.observe(el));
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.reveal, .card').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('visible');
+    });
+  });
+});
+</script>
+</body>
+</html>
